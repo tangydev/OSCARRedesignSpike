@@ -1,0 +1,1214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSCAR (prototype)</title>
+<style>
+:root {
+  --ink: #1b1e23;
+  --ink-2: #4a515b;
+  --line: #cfd3da;
+  --line-2: #e4e6ea;
+  --bg: #f2f3f5;
+  --surface: #fff;
+  --accent: #1f56c4;
+  --accent-tint: #e8eefb;
+  --ok: #0e6a3a;
+  --ok-tint: #e4f2ea;
+  --dark: #24282e;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+h1, h2, h3, p, ul { margin: 0; padding: 0; }
+ul { list-style: none; }
+svg.i { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Layout: desktop page 70%, phone 30% */
+.app { display: grid; grid-template-columns: 7fr 3fr; height: 100vh; }
+.desk { position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
+.desk-scroll { flex: 1; overflow-y: auto; padding: 18px 28px 22px; display: flex; flex-direction: column; gap: 16px; }
+.phone-col { display: flex; align-items: center; justify-content: center; background: #dcdfe4; border-left: 1px solid var(--line); min-width: 0; }
+
+/* Page header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 28px; background: var(--surface); border-bottom: 2px solid var(--ink); }
+.brand { font-size: 16px; font-weight: 700; color: var(--ink-2); letter-spacing: .01em; }
+.top h1 { font-size: 24px; line-height: 1.2; }
+.top-right { display: flex; align-items: center; gap: 12px; font-size: 17px; }
+.clock { font-weight: 700; padding: 6px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap; }
+
+/* Buttons */
+.btn { font: inherit; font-weight: 650; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--ink-2); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #1a49a8; }
+.btn.small { min-height: 36px; padding: 0 12px; font-size: 16px; }
+.btn.wide { width: 100%; }
+.btn:disabled { background: var(--line-2); border-color: var(--line); color: var(--ink-2); cursor: not-allowed; }
+.link { font: inherit; background: none; border: 0; padding: 4px 2px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Banner */
+.banner { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--surface); border: 2px solid var(--ink); border-radius: 10px; font-weight: 600; }
+.banner.good { border-color: var(--ok); background: var(--ok-tint); color: var(--ok); }
+.banner p { flex: 1; }
+.banner .link { color: inherit; font-weight: 500; }
+
+/* Sections */
+.sec-head { display: flex; align-items: center; justify-content: space-between; min-height: 30px; margin-bottom: 7px; }
+h2 { font-size: 21px; line-height: 1.2; }
+.sec-note { color: var(--ink-2); }
+
+/* Waitlist cards */
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 15px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card.registered { border: 2px solid var(--ok); }
+.card.held, .card.claim { border: 2px solid var(--ink); }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.card h3 { font-size: 18px; line-height: 1.25; }
+.card h3 span { display: block; font-size: 21px; }
+.pos { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pos strong { font-size: 25px; line-height: 1.2; }
+.move { color: var(--ink-2); font-weight: 600; }
+.bar { height: 14px; border-radius: 7px; background: var(--line-2); border: 1px solid var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ink-2); border-radius: 6px 0 0 6px; }
+.bar i.grow { animation: grow .4s ease-out both; }
+@keyframes grow { from { width: var(--from); } to { width: var(--to); } }
+.facts { display: flex; flex-direction: column; gap: 5px; }
+.facts li { display: flex; align-items: flex-start; gap: 8px; }
+.facts svg.i { margin-top: .15em; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; padding: 2px 10px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--bg); align-self: flex-start; }
+.pill.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent); }
+.pill.solid { background: var(--ink); border-color: var(--ink); color: #fff; }
+.card-status { display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 750; line-height: 1.2; }
+.card.registered .card-status { color: var(--ok); }
+.count { padding: 8px 12px; background: var(--bg); border-radius: 10px; }
+.count strong { display: block; font-size: 23px; line-height: 1.25; }
+.row { display: flex; gap: 10px; }
+.row .btn { flex: 1; }
+.fine { color: var(--ink-2); }
+.delivery { display: flex; align-items: flex-start; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); margin-top: auto; }
+.delivery svg.i { margin-top: .15em; }
+.delivery.fail { font-weight: 700; }
+.delivery.good { color: var(--ok); }
+@keyframes flip { from { opacity: .25; transform: perspective(900px) rotateX(16deg) scale(.98); } to { opacity: 1; transform: none; } }
+.card.flip { animation: flip .32s ease-out both; }
+
+/* Registered + add course */
+.lower { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: start; }
+.panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 13px 18px; }
+.reg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line-2); }
+.reg-row:last-child { border-bottom: 0; }
+.reg-row b { font-weight: 700; }
+.reg-row small { display: block; font-size: 15px; color: var(--ink-2); }
+.reg-tag { display: inline-flex; align-items: center; gap: 5px; font-weight: 650; white-space: nowrap; color: var(--ok); }
+.reg-row.dropped { color: var(--ink-2); }
+.reg-row.dropped .reg-tag { color: var(--ink-2); }
+.reg-row.enter { animation: enter .3s ease-out both; }
+.field { display: block; font-weight: 600; }
+.input, select.input { font: inherit; width: 100%; min-height: 44px; padding: 0 12px; border: 1.5px solid var(--ink-2); border-radius: 10px; background: var(--surface); color: var(--ink); }
+.results { display: flex; flex-direction: column; margin-top: 4px; }
+.result { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-2); }
+.result:last-child { border-bottom: 0; }
+.result small { display: block; font-size: 15px; color: var(--ink-2); }
+
+/* Dialogs sit over the left pane only, so the phone stays on camera */
+.scrim { position: absolute; inset: 0; z-index: 20; background: rgba(27, 30, 35, .5); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fade .2s ease-out both; }
+.dialog { background: var(--surface); border-radius: 16px; padding: 22px 26px; width: 100%; max-width: 860px; max-height: 100%; overflow-y: auto; border: 2px solid var(--ink); animation: enter .3s ease-out both; }
+.dialog.narrow { max-width: 520px; }
+.dialog h2 { font-size: 24px; }
+.dialog-sub { color: var(--ink-2); margin: 3px 0 14px; }
+.setup { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+fieldset { border: 0; margin: 0 0 14px; padding: 0; min-width: 0; }
+legend { font-weight: 700; padding: 0; margin-bottom: 5px; }
+.check { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); flex: none; }
+.rule { border: 1.5px dashed var(--ink-2); border-radius: 12px; padding: 10px 13px; margin-top: 8px; display: flex; flex-direction: column; gap: 9px; }
+.rule label { font-weight: 600; }
+.rule .input { margin-top: 3px; font-weight: 400; }
+.preflight { background: var(--bg); border-radius: 12px; padding: 14px 16px; align-self: start; }
+.preflight h3 { font-size: 18px; margin-bottom: 8px; }
+.preflight ul { display: flex; flex-direction: column; gap: 7px; }
+.preflight li { display: flex; gap: 9px; align-items: flex-start; }
+.preflight li svg.i { margin-top: .15em; }
+.preflight li.pass svg.i { color: var(--ok); }
+.preflight li.bad { font-weight: 700; }
+.preflight p { margin-top: 10px; color: var(--ink-2); }
+.dialog-foot { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.dialog-foot .spacer { flex: 1; }
+.undo-list { display: flex; flex-direction: column; gap: 8px; border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 12px 0; font-size: 18px; font-weight: 600; }
+.undo-list li { display: flex; gap: 10px; align-items: flex-start; }
+.undo-list svg.i { margin-top: .2em; }
+.undo-actions { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+
+/* Phone */
+.phone { width: min(384px, calc(100% - 28px)); height: min(calc(100vh - 24px), 860px); background: #15171a; border-radius: 46px; padding: 11px; box-shadow: 0 10px 28px rgba(0, 0, 0, .28); }
+.screen { position: relative; height: 100%; border-radius: 36px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; isolation: isolate; }
+.status { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 12px 24px 5px; font-weight: 700; font-size: 15px; flex: none; }
+.status-icons { display: flex; gap: 6px; align-items: center; }
+.status-icons svg { width: 22px; height: 12px; fill: currentColor; }
+.view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.screen.is-lock { background: linear-gradient(170deg, #3b414a 0%, #24282e 62%, #1b1e23 100%); color: #fff; }
+.screen.is-lock :focus-visible { outline-color: #fff; }
+.lock { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 12px 12px 8px; overflow-y: auto; }
+.lock-time { font-size: 72px; font-weight: 300; line-height: 1.05; letter-spacing: -.01em; }
+.lock-date { font-size: 18px; font-weight: 500; margin-bottom: 14px; }
+.notifs { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.notif { font: inherit; display: block; width: 100%; text-align: left; border: 0; border-radius: 16px; padding: 10px 13px; background: #f4f5f6; color: var(--ink); cursor: pointer; box-shadow: 0 3px 10px rgba(0, 0, 0, .25); }
+.notif-head { display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 650; color: var(--ink-2); margin-bottom: 2px; }
+.notif-head span { display: inline-flex; align-items: center; gap: 5px; }
+.notif u { text-underline-offset: 2px; }
+.notif.enter { animation: slideDown .32s ease-out both; }
+.notifs .notif.enter:nth-child(2) { animation-delay: .35s; }
+.banner-notif { position: absolute; top: 40px; left: 10px; right: 10px; width: auto; z-index: 5; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-34px); } to { opacity: 1; transform: none; } }
+@keyframes enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.tabs { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px 10px 12px; border-top: 1px solid var(--line-2); background: var(--surface); }
+.tab { position: relative; font: inherit; font-size: 15px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 0; border: 0; border-radius: 10px; background: none; color: var(--ink-2); cursor: pointer; }
+.tab svg.i { width: 22px; height: 22px; }
+.tab[aria-current="page"] { background: var(--accent-tint); color: var(--accent); }
+.tab-badge { position: absolute; top: 1px; left: calc(50% + 8px); min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; line-height: 20px; text-align: center; animation: slideDown .3s ease-out both; }
+.screen.is-lock .tabs { background: rgba(255, 255, 255, .12); border-top-color: transparent; }
+.screen.is-lock .tab { color: #fff; }
+.screen.is-lock .tab[aria-current="page"] { background: rgba(255, 255, 255, .22); color: #fff; }
+.screen.is-lock .tab-badge { background: #fff; color: var(--ink); }
+
+.app-head { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 16px 9px; border-bottom: 1px solid var(--line-2); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--ink-2); color: #fff; display: grid; place-items: center; font-weight: 700; flex: none; }
+.app-head b { display: block; font-size: 17px; line-height: 1.2; }
+.app-head small { font-size: 14px; color: var(--ink-2); }
+.thread { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 7px; }
+.day { text-align: center; font-size: 14px; color: var(--ink-2); margin: 3px 0 0; }
+.bubble { max-width: 90%; padding: 8px 12px; border-radius: 16px; background: #e7e9ec; align-self: flex-start; overflow-wrap: anywhere; }
+.bubble.me { background: var(--accent); color: #fff; align-self: flex-end; font-weight: 650; }
+.bubble.enter { animation: enter .3s ease-out both; }
+.bubble time { display: block; font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+.bubble.me time { color: #fff; }
+.tlink { font: inherit; padding: 0; border: 0; background: none; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; overflow-wrap: anywhere; }
+.tlink.dead { color: var(--ink-2); cursor: default; }
+.reply { flex: none; padding: 7px 12px 9px; border-top: 1px solid var(--line-2); }
+.reply-hint { font-size: 15px; color: var(--ink-2); margin-bottom: 6px; }
+.chips { display: flex; gap: 8px; margin-bottom: 8px; }
+.chip { font: inherit; font-weight: 750; flex: 1; min-height: 42px; border-radius: 21px; border: 2px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; animation: enter .3s ease-out both; }
+.chip.go { background: var(--accent); color: #fff; }
+.composer { min-height: 38px; display: flex; align-items: center; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 19px; color: var(--ink-2); }
+
+.mail-list { flex: 1; min-height: 0; overflow-y: auto; }
+.mail-row { font: inherit; width: 100%; display: block; text-align: left; padding: 10px 16px; background: none; border: 0; border-bottom: 1px solid var(--line-2); color: var(--ink); cursor: pointer; }
+.mail-row:hover { background: var(--bg); }
+.mail-row.enter { animation: enter .3s ease-out both; }
+.mail-row small { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.mail-row.unread b::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+.mail-row b { display: block; font-weight: 500; }
+.mail-row.unread b { font-weight: 750; }
+.mail-read { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 16px 14px; display: flex; flex-direction: column; gap: 9px; }
+.mail-read h3 { font-size: 19px; line-height: 1.25; }
+.mail-from { font-size: 15px; color: var(--ink-2); overflow-wrap: anywhere; }
+.back { font: inherit; font-weight: 600; background: none; border: 0; padding: 4px 6px 4px 0; color: var(--accent); display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
+
+.sheet { position: absolute; inset: 0; z-index: 6; background: rgba(27, 30, 35, .5); display: flex; align-items: flex-end; animation: fade .2s ease-out both; }
+.sheet-card { width: 100%; background: var(--surface); color: var(--ink); border-radius: 22px 22px 0 0; padding: 18px 16px 22px; animation: enter .3s ease-out both; }
+.sheet-card h2 { font-size: 22px; }
+
+/* Demo panel: hidden by default, toggled with D */
+.demo { position: fixed; left: 16px; bottom: 12px; z-index: 50; width: 660px; padding: 10px 12px; border-radius: 14px; background: var(--dark); color: #fff; box-shadow: 0 12px 30px rgba(0, 0, 0, .4); }
+.demo-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; font-size: 15px; }
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.demo button { font: inherit; font-size: 15px; display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 7px; border-radius: 8px; border: 0; text-align: left; color: #fff; background: rgba(255, 255, 255, .1); cursor: pointer; }
+.demo button:hover { background: rgba(255, 255, 255, .2); }
+.demo button[aria-pressed="true"] { background: #fff; color: var(--ink); }
+.demo button[aria-pressed="true"] kbd { background: var(--ink); color: #fff; }
+.demo :focus-visible { outline-color: #fff; }
+.demo kbd { font: inherit; font-weight: 700; min-width: 24px; padding: 0 5px; text-align: center; border-radius: 5px; background: #fff; color: var(--ink); }
+.demo-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before { animation-duration: .01s !important; animation-delay: 0s !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="desk">
+    <header class="top">
+      <div>
+        <p class="brand">OSCAR (prototype)</p>
+        <h1>Register for Classes, Spring 2027</h1>
+      </div>
+      <div class="top-right">
+        <span>Josh</span>
+        <span class="clock" id="clock"></span>
+      </div>
+    </header>
+    <div class="desk-scroll">
+      <div id="banner" aria-live="polite"></div>
+      <section aria-labelledby="h-waitlists">
+        <div class="sec-head"><h2 id="h-waitlists">Your Waitlists</h2></div>
+        <div class="cards" id="cards"></div>
+      </section>
+      <div class="lower">
+        <section aria-labelledby="h-registered">
+          <div class="sec-head"><h2 id="h-registered">Registered</h2><span class="sec-note" id="credits"></span></div>
+          <div class="panel" id="registered"></div>
+        </section>
+        <section aria-labelledby="h-add">
+          <div class="sec-head"><h2 id="h-add">Add course</h2></div>
+          <div class="panel">
+            <label class="field" for="search">Search courses</label>
+            <input class="input" id="search" type="search" placeholder="Try CS 6750" autocomplete="off">
+            <div class="results" id="results"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div id="modal"></div>
+  </main>
+  <aside class="phone-col" aria-label="Josh's phone">
+    <div class="phone"><div class="screen" id="screen"></div></div>
+  </aside>
+</div>
+<div class="demo" id="demo" role="region" aria-label="Demo controls" hidden></div>
+
+<script>
+'use strict';
+
+/* ---------- Scenario data ---------- */
+
+const SEC = 1e3, MIN = 60 * SEC, HOUR = 60 * MIN, DAY = 24 * HOUR;
+const CREDIT_LIMIT = 21;
+const SEED_NOW = +new Date(2026, 9, 27, 20, 30);  // Tue, Oct 27, 8:30 pm
+const SEAT_TIME = +new Date(2026, 9, 27, 21, 40); // Tue, Oct 27, 9:40 pm
+const AUTO_OPEN_MS = 2800;                        // time a lock-screen alert stays up before the app opens
+const UNDO_URL = 'oscar.example/u/7Kd2';
+const FAKE_TIME_CONFLICT = "New time conflict with CS 6400's lab";
+
+const COURSES = {
+  cs6750:  { code: 'CS 6750',  name: 'Human-Computer Interaction',    credits: 3 },
+  cs7641:  { code: 'CS 7641',  name: 'Machine Learning',              credits: 3 },
+  cs6400:  { code: 'CS 6400',  name: 'Database Systems',              credits: 3 },
+  vip6603: { code: 'VIP 6603', name: 'Vertically Integrated Project', credits: 3 },
+};
+const SCHEDULE_ORDER = ['cs6400', 'vip6603', 'cs6750', 'cs7641'];
+
+const seedWaitlists = () => ({
+  cs6750: {
+    status: 'waiting', position: 3, size: 12, moved: 2,
+    auto: true, swap: 'cs6400', expires: '2027-01-08',
+    channels: { text: true, email: true },
+    delivery: { channel: 'text', ok: true, at: +new Date(2026, 9, 27, 7, 15) },
+  },
+  cs7641: {
+    status: 'waiting', position: 8, size: 15, moved: 0,
+    auto: false, swap: null, expires: '2027-01-08',
+    channels: { text: true, email: false },
+    delivery: { channel: 'text', ok: true, at: +new Date(2026, 9, 26, 9, 5) },
+  },
+});
+
+const seed = () => ({
+  now: SEED_NOW,
+  failNextText: false,
+  conflict: false,
+  demoOpen: false,
+  banner: null,
+  schedule: ['cs6400', 'vip6603'],
+  dropped: [],
+  waitlists: seedWaitlists(),
+  texts: [
+    { id: 't1', from: 'oscar', at: +new Date(2026, 9, 26, 9, 5), text: "OSCAR: You're #8 of 15 on the CS 7641 waitlist. Auto-enroll is off." },
+    { id: 't2', from: 'oscar', at: +new Date(2026, 9, 27, 7, 15), text: 'OSCAR: You moved to #3 of 12 on the CS 6750 waitlist. Auto-enroll is on.' },
+  ],
+  emails: [
+    { id: 'e1', at: +new Date(2026, 9, 27, 7, 15), read: true, subject: 'You moved to #3 of 12 on the CS 6750 waitlist',
+      lines: ['You moved up 2 spots on the CS 6750 Human-Computer Interaction waitlist.', 'Auto-enroll is on. If a seat opens, you will be registered and CS 6400 will be dropped.'] },
+  ],
+  notifs: [],
+  unreadTexts: 0,
+  phone: { view: 'lock', mailId: null, banner: null },
+  undo: null,    // { id, where: 'desk' | 'phone' }
+  setup: null,   // draft of the join/edit dialog
+});
+
+/* ---------- Store ---------- */
+
+let s = seed();
+let nextId = 100;
+const uid = (p) => p + nextId++;
+const timers = {};
+
+function later(name, ms, fn) {
+  clearTimeout(timers[name]);
+  timers[name] = setTimeout(() => update(fn), ms);
+}
+function cancelTimers() {
+  Object.values(timers).forEach(clearTimeout);
+}
+function update(fn) {
+  fn(s);
+  render();
+}
+
+/* ---------- Formatting ---------- */
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const pad = (n) => String(n).padStart(2, '0');
+const clock12 = (d) => `${d.getHours() % 12 || 12}:${pad(d.getMinutes())}`;
+const time = (ts) => { const d = new Date(ts); return `${clock12(d)} ${d.getHours() < 12 ? 'am' : 'pm'}`; };
+const day = (ts) => { const d = new Date(ts); return `${DAYS[d.getDay()].slice(0, 3)}, ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`; };
+const dayLong = (ts) => { const d = new Date(ts); return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`; };
+const monthDay = (ts) => { const d = new Date(ts); return `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`; };
+const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+const stamp = (ts) => sameDay(ts, s.now) ? time(ts) : `${day(ts).slice(0, 3)} ${time(ts)}`;
+const shortDeadline = (ts) => `${monthDay(ts)}, ${time(ts)}`;
+const longDeadline = (ts) => `${day(ts)}, ${time(ts)}`;
+const remaining = (ts) => {
+  const m = Math.max(0, Math.floor((ts - s.now) / MIN));
+  return `${Math.floor(m / 60)} h ${m % 60} m`;
+};
+
+/* ---------- Domain rules ---------- */
+
+const creditsOn = () => s.schedule.reduce((sum, id) => sum + COURSES[id].credits, 0);
+const undoOpen = (id) => { const w = s.waitlists[id]; return w.status === 'registered' && s.now < w.reg.undoBy; };
+const channelsLabel = (c) => [c.text && 'Text', c.email && (c.text ? 'email' : 'Email')].filter(Boolean).join(' + ');
+const autoLabel = (w) => !w.auto ? 'Auto-enroll: OFF'
+  : w.swap ? `Auto-enroll: ON, drops ${COURSES[w.swap].code}` : 'Auto-enroll: ON';
+const otherWaitlist = (id) => {
+  const other = Object.keys(s.waitlists).find((k) => k !== id && s.waitlists[k].status === 'waiting');
+  if (!other) return '';
+  const o = s.waitlists[other];
+  return ` Your other waitlist: ${COURSES[other].code} #${o.position} of ${o.size}.`;
+};
+// The course whose CLAIM/PASS quick replies are showing in the thread: the most recent open offer.
+const replyCourse = () => Object.keys(s.waitlists)
+  .filter((k) => { const w = s.waitlists[k]; return (w.status === 'held' || w.status === 'claim') && w.replyable; })
+  .sort((a, b) => s.waitlists[b].seatAt - s.waitlists[a].seatAt)[0] || null;
+
+function conflictFor(id, swap) {
+  if (id === 'cs6750' && s.conflict) return FAKE_TIME_CONFLICT;
+  // CS 7641 overlaps VIP 6603, which is why Josh left auto-enroll off; dropping VIP 6603 clears it.
+  if (id === 'cs7641' && swap !== 'vip6603') return 'Time conflict with VIP 6603 (Thu 3:30 pm)';
+  return null;
+}
+
+function preflight(d) {
+  const c = COURSES[d.id], drop = d.swap ? COURSES[d.swap] : null;
+  const after = creditsOn() + c.credits - (drop ? drop.credits : 0);
+  const conflict = conflictFor(d.id, d.swap);
+  return [
+    { ok: true, label: 'No registration holds' },
+    { ok: true, label: 'Prerequisites met' },
+    { ok: !conflict, label: conflict || 'No time conflicts' },
+    { ok: after <= CREDIT_LIMIT, label: `${after} of ${CREDIT_LIMIT} credit hours after ${drop ? `swapping out ${drop.code}` : `adding ${c.code}`}` },
+  ];
+}
+
+function closeOverlays() {
+  s.undo = null;
+  s.setup = null;
+}
+
+function openPhone(view, mailId = null) {
+  clearTimeout(timers.autoOpen);
+  s.phone.view = view;
+  s.phone.mailId = mailId;
+  s.phone.banner = null;
+  if (view !== 'lock') s.notifs = [];
+  if (view === 'messages') s.unreadTexts = 0;
+  if (view === 'mail') {
+    const mail = s.emails.find((e) => e.id === mailId);
+    if (mail) mail.read = true;
+  }
+}
+
+// Sends one alert on the course's channels. A failed text falls back to email.
+// cue: true means Josh is away from the laptop, so it lands on the lock screen first.
+function sendAlert(id, { text, undo = null, mail, cue }) {
+  const w = s.waitlists[id];
+  let textMsg = null, email = null, failed = false;
+  if (w.channels.text) {
+    if (s.failNextText) {
+      s.failNextText = false;
+      failed = true;
+    } else {
+      textMsg = { id: uid('t'), from: 'oscar', at: s.now, text, undo };
+      s.texts.push(textMsg);
+      s.unreadTexts++;
+    }
+  }
+  if (w.channels.email || failed) {
+    email = { id: uid('e'), at: s.now, read: false, course: id, ...mail };
+    s.emails.unshift(email);
+  }
+  w.delivery = { channel: textMsg ? 'text' : 'email', ok: !failed, at: s.now };
+
+  const textNotif = textMsg && { id: `n${textMsg.id}`, app: 'Messages', title: 'OSCAR', body: text, at: s.now, target: { view: 'messages' } };
+  const mailNotif = email && { id: `n${email.id}`, app: 'Mail', title: 'OSCAR Registration', body: email.subject, at: s.now, target: { view: 'mail', mailId: email.id } };
+  if (cue) {
+    clearTimeout(timers.banner);
+    s.phone.view = 'lock';
+    s.phone.mailId = null;
+    s.phone.banner = null;
+    s.notifs.unshift(...[textNotif, mailNotif].filter(Boolean));
+    const target = textNotif ? textNotif.target : mailNotif.target;
+    later('autoOpen', AUTO_OPEN_MS, () => openPhone(target.view, target.mailId));
+  } else {
+    const notif = textNotif || mailNotif;
+    if (s.phone.view === 'lock') {
+      s.notifs.unshift(notif);
+    } else if (notif === textNotif && s.phone.view === 'messages') {
+      s.unreadTexts = 0;
+    } else {
+      s.phone.banner = notif;
+      later('banner', 3200, () => { s.phone.banner = null; });
+    }
+  }
+  return Boolean(textMsg);
+}
+
+function register(id, { cue }) {
+  const w = s.waitlists[id], c = COURSES[id];
+  const drop = w.swap && s.schedule.includes(w.swap) ? w.swap : null;
+  const dropCode = drop && COURSES[drop].code;
+  s.schedule = s.schedule.filter((x) => x !== drop).concat(id);
+  if (drop) s.dropped.push({ id: drop, at: s.now });
+  w.status = 'registered';
+  w.reg = { at: s.now, drop, undoBy: s.now + DAY };
+  w.deadline = null;
+  s.banner = { good: true, text: `You're registered in ${c.code}${drop ? ` and ${dropCode} was dropped` : ''}. Nothing else to submit.` };
+  sendAlert(id, {
+    cue,
+    undo: id,
+    text: `OSCAR: You're registered in ${c.code}${drop ? ` and ${dropCode} was dropped` : ''}. Undo within 24 h: {link}.${otherWaitlist(id)}`,
+    mail: {
+      subject: `You're registered in ${c.code}${drop ? `; ${dropCode} dropped` : ''}`,
+      lines: [
+        `You're registered in ${c.code} ${c.name}.${drop ? ` ${dropCode} ${COURSES[drop].name} was dropped, as your swap rule said.` : ''}`,
+        `You can undo this until ${longDeadline(w.reg.undoBy)}.`,
+        otherWaitlist(id).trim(),
+      ].filter(Boolean),
+      action: 'undo',
+    },
+  });
+  s.now += 30 * SEC; // a beat after the event, so the first countdown reads 23 h 59 m
+}
+
+function holdSeat(id) {
+  const w = s.waitlists[id], c = COURSES[id];
+  const drop = w.swap && COURSES[w.swap].code;
+  w.status = 'held';
+  w.seatAt = s.now;
+  w.deadline = s.now + DAY;
+  w.reason = FAKE_TIME_CONFLICT;
+  s.banner = null;
+  w.replyable = sendAlert(id, {
+    cue: true,
+    text: `OSCAR: A seat opened in ${c.code}, but we did not swap. ${w.reason}. Nothing was dropped. Seat held until ${shortDeadline(w.deadline)}. Reply CLAIM to register${drop ? ` and drop ${drop}` : ''}, or PASS to release it.`,
+    mail: {
+      subject: `Action needed: ${c.code} seat held until ${shortDeadline(w.deadline)}`,
+      lines: [
+        `A seat opened in ${c.code}, but something changed since your pre-flight check: ${w.reason}.`,
+        `Nothing was dropped. We're holding the seat until ${longDeadline(w.deadline)}.`,
+      ],
+      action: 'offer',
+    },
+  });
+  s.now += 30 * SEC;
+}
+
+function offerSeat(id) {
+  const w = s.waitlists[id], c = COURSES[id];
+  w.status = 'claim';
+  w.seatAt = s.now;
+  w.deadline = s.now + DAY;
+  s.banner = null;
+  w.replyable = sendAlert(id, {
+    cue: true,
+    text: `OSCAR: A seat opened in ${c.code}. Reply CLAIM to register or PASS to release it. Expires ${shortDeadline(w.deadline)}.`,
+    mail: {
+      subject: `Seat open in ${c.code}: claim by ${shortDeadline(w.deadline)}`,
+      lines: [`A seat opened in ${c.code} ${c.name}. It's held for you until ${longDeadline(w.deadline)}.`],
+      action: 'offer',
+    },
+  });
+  s.now += 30 * SEC;
+}
+
+function releaseSeat(id, { cue, note }) {
+  const w = s.waitlists[id], c = COURSES[id];
+  w.status = 'released';
+  w.note = note;
+  w.deadline = null;
+  s.banner = { text: `Seat released in ${c.code}. Your schedule didn't change.` };
+  sendAlert(id, {
+    cue,
+    text: `OSCAR: ${note} Seat released in ${c.code}. Your schedule didn't change.`,
+    mail: { subject: `Seat released in ${c.code}`, lines: [`${note} Your schedule didn't change.`] },
+  });
+}
+
+function undoRegistration(id) {
+  const w = s.waitlists[id], c = COURSES[id], drop = w.reg.drop;
+  s.schedule = s.schedule.filter((x) => x !== id);
+  if (drop) {
+    s.schedule.push(drop);
+    s.dropped = s.dropped.filter((d) => d.id !== drop);
+  }
+  w.status = 'undone';
+  w.undone = { at: s.now, drop };
+  w.reg = null;
+  s.undo = null;
+  const dropCode = drop && COURSES[drop].code;
+  const what = drop ? `${c.code} was dropped and ${dropCode} is restored` : `${c.code} was dropped`;
+  s.banner = { good: true, text: `${drop ? 'Swap' : 'Registration'} undone. ${what}.` };
+  sendAlert(id, {
+    cue: false,
+    text: `OSCAR: Undone. ${what}.${otherWaitlist(id)}`,
+    mail: { subject: `Undone: ${what}`, lines: [`${what}.`, otherWaitlist(id).trim()].filter(Boolean) },
+  });
+}
+
+// Resets one course to waiting so a demo key always fires, even mid-story.
+function backToWaitlist(id) {
+  const w = s.waitlists[id];
+  if (w.status === 'registered') {
+    s.schedule = s.schedule.filter((x) => x !== id);
+    if (w.reg.drop) {
+      s.schedule.push(w.reg.drop);
+      s.dropped = s.dropped.filter((d) => d.id !== w.reg.drop);
+    }
+  }
+  if (w.status === 'none') Object.assign(w, seedWaitlists()[id]);
+  w.status = 'waiting';
+  w.reg = null;
+  w.deadline = null;
+}
+
+function expireOffers() {
+  Object.keys(s.waitlists).forEach((id) => {
+    const w = s.waitlists[id];
+    if ((w.status === 'held' || w.status === 'claim') && w.deadline <= s.now) {
+      const dropped = w.status === 'held' ? ' Nothing was dropped.' : '';
+      releaseSeat(id, { cue: true, note: `Time ran out on your hold.${dropped}` });
+    }
+  });
+}
+
+/* ---------- Actions ---------- */
+
+const demo = {
+  moveUp() {
+    const w = s.waitlists.cs6750;
+    if (w.status !== 'waiting' || w.position <= 1) return;
+    closeOverlays();
+    s.now += 10 * MIN;
+    w.prevPosition = w.position;
+    w.position -= 1;
+    w.moved = (w.moved || 0) + 1;
+    sendAlert('cs6750', {
+      cue: true,
+      text: `OSCAR: You moved to #${w.position} of ${w.size} on the CS 6750 waitlist. Auto-enroll is ${w.auto ? 'on' : 'off'}.`,
+      mail: {
+        subject: `You moved to #${w.position} of ${w.size} on the CS 6750 waitlist`,
+        lines: [`You moved up on the CS 6750 Human-Computer Interaction waitlist. You're now #${w.position} of ${w.size}.`, `Auto-enroll is ${w.auto ? 'on' : 'off'}.`],
+      },
+    });
+  },
+  seatOpens(id, { conflict }) {
+    closeOverlays();
+    backToWaitlist(id);
+    if (id === 'cs6750') s.conflict = conflict;
+    s.now = s.now < SEAT_TIME ? SEAT_TIME : s.now + 2 * MIN;
+    const w = s.waitlists[id];
+    if (!w.auto) offerSeat(id);
+    else if (conflict) holdSeat(id);
+    else register(id, { cue: true });
+  },
+  toggleFail() { s.failNextText = !s.failNextText; },
+  advance(hours) {
+    closeOverlays();
+    s.now += hours * HOUR;
+    expireOffers();
+  },
+};
+
+const keymap = {
+  1: () => demo.moveUp(),
+  2: () => demo.seatOpens('cs6750', { conflict: false }),
+  3: () => demo.seatOpens('cs6750', { conflict: true }),
+  4: () => demo.seatOpens('cs7641', { conflict: false }),
+  5: () => demo.toggleFail(),
+  6: () => demo.advance(1),
+  7: () => demo.advance(6),
+  8: () => demo.advance(23),
+};
+
+function resetAll() {
+  cancelTimers();
+  const demoOpen = s.demoOpen;
+  s = seed();
+  s.demoOpen = demoOpen;
+  seen.clear();
+  markSeedSeen();
+  cardKeys = {};
+  animate = false;
+  document.getElementById('search').value = '';
+  render();
+  animate = true;
+}
+
+// Every click in the app routes through here; data-act names the handler.
+const clicks = {
+  demoKey(el) { update(keymap[el.dataset.key]); },
+  reset() { resetAll(); },
+  dismissBanner() { update(() => { s.banner = null; }); },
+  edit(el) { openSetup(el.dataset.id, 'edit', el.dataset.fid); },
+  join(el) { openSetup(el.dataset.id, 'join', el.dataset.fid); },
+  undoDesk(el) { update(() => { s.undo = { id: el.dataset.id, where: 'desk', opener: el.dataset.fid }; }); },
+  undoPhone(el) {
+    if (!undoOpen(el.dataset.id)) return;
+    update(() => { s.undo = { id: el.dataset.id, where: 'phone' }; });
+  },
+  undoConfirm(el) { update(() => undoRegistration(el.dataset.id)); },
+  undoKeep() { update(() => { s.undo = null; }); },
+  accept(el) { update(() => register(el.dataset.id, { cue: false })); },
+  decline(el) {
+    const w = s.waitlists[el.dataset.id];
+    update(() => releaseSeat(el.dataset.id, { cue: false, note: w.status === 'held' ? 'Nothing was dropped.' : 'You passed on this seat.' }));
+  },
+  reply(el) {
+    const id = replyCourse(), word = el.dataset.word;
+    update(() => {
+      s.texts.push({ id: uid('t'), from: 'me', at: s.now, text: word });
+      s.waitlists[id].replyable = false;
+    });
+    later('reply', 800, () => {
+      if (word === 'CLAIM') register(id, { cue: false });
+      else releaseSeat(id, { cue: false, note: s.waitlists[id].status === 'held' ? 'Nothing was dropped.' : 'You passed on this seat.' });
+    });
+  },
+  tab(el) { update(() => openPhone(el.dataset.view)); },
+  notif(el) {
+    const view = el.dataset.view, mailId = el.dataset.mail || null;
+    update(() => openPhone(view, mailId));
+  },
+  mailOpen(el) { update(() => openPhone('mail', el.dataset.mail)); },
+  mailBack() { update(() => openPhone('mail')); },
+  setupCancel() { closeSetup(); },
+  setupSave() { saveSetup(); },
+  setupLeave() { leaveWaitlist(); },
+};
+
+/* ---------- Setup dialog (join / edit) ---------- */
+
+function openSetup(id, mode, opener) {
+  const w = s.waitlists[id];
+  update(() => {
+    s.setup = mode === 'edit'
+      ? { id, mode, opener, text: w.channels.text, email: w.channels.email, auto: w.auto, swap: w.swap || '', expires: w.expires }
+      : { id, mode, opener, text: true, email: true, auto: false, swap: '', expires: '2027-01-08' };
+  });
+}
+
+function closeSetup() {
+  update(() => { s.setup = null; });
+}
+
+function setupHTML(d) {
+  const c = COURSES[d.id], seat = seedWaitlists()[d.id], w = s.waitlists[d.id];
+  const joined = d.mode === 'edit';
+  const position = joined ? w : seat;
+  const swapOptions = s.schedule.map((id) => `<option value="${id}" ${d.swap === id ? 'selected' : ''}>${COURSES[id].code} ${COURSES[id].name}</option>`).join('');
+  return `
+  <div class="scrim">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+      <h2 id="setup-title">${joined ? `Waitlist settings for ${c.code}` : `Join the waitlist for ${c.code}`}</h2>
+      <p class="dialog-sub">${joined ? `You're #${position.position} of ${position.size}.` : `The class is full. You'll be #${position.position} of ${position.size}.`}</p>
+      <div class="setup">
+        <div>
+          <fieldset>
+            <legend>Alert me by</legend>
+            <label class="check"><input type="checkbox" id="f-text" ${d.text ? 'checked' : ''} data-autofocus> Text message (••• 1234)</label>
+            <label class="check"><input type="checkbox" id="f-email" ${d.email ? 'checked' : ''}> Email (josh@student.example)</label>
+          </fieldset>
+          <fieldset style="margin-bottom:0">
+            <legend>Auto-enroll</legend>
+            <label class="check"><input type="checkbox" id="f-auto" ${d.auto ? 'checked' : ''}> Register me automatically if a seat opens</label>
+            <div class="rule" id="f-rule" ${d.auto ? '' : 'hidden'}>
+              <label>If I get in, drop:
+                <select class="input" id="f-swap"><option value="">Nothing, just add it</option>${swapOptions}</select>
+              </label>
+              <label>Rule expires on
+                <input class="input" id="f-expires" type="date" value="${d.expires}" min="2026-10-27" max="2027-01-29">
+              </label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="preflight" id="f-preflight" aria-live="polite"></div>
+      </div>
+      <div class="dialog-foot">
+        ${joined ? '<button class="link" data-act="setupLeave" data-fid="setup-leave">Leave waitlist</button>' : ''}
+        <span class="spacer"></span>
+        <button class="btn" data-act="setupCancel">Cancel</button>
+        <button class="btn primary" id="f-save" data-act="setupSave">${joined ? 'Save' : 'Join waitlist'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPreflight() {
+  const d = s.setup, box = document.getElementById('f-preflight');
+  if (!d || !box) return;
+  const rows = preflight(d);
+  const blocked = d.auto && rows.some((r) => !r.ok);
+  const channelMissing = !d.text && !d.email;
+  document.getElementById('f-save').disabled = blocked || channelMissing;
+  document.getElementById('f-rule').hidden = !d.auto;
+  if (!d.auto) {
+    box.innerHTML = `<h3>Pre-flight check</h3><p>Turn on auto-enroll to check it now. You'll still get alerts, and you can claim a seat when one opens.</p>`;
+    return;
+  }
+  const dropCode = d.swap && COURSES[d.swap].code;
+  box.innerHTML = `<h3>Pre-flight check</h3>
+    <ul>${rows.map((r) => `<li class="${r.ok ? 'pass' : 'bad'}">${icon(r.ok ? 'check' : 'cross')}<span>${r.label}</span></li>`).join('')}</ul>
+    <p>${blocked
+      ? 'Fix the item marked with a cross, or turn off auto-enroll, to save.'
+      : `If a seat opens, you'll be registered${dropCode ? ` and ${dropCode} dropped` : ''}. You can undo for 24 h. We check again the moment the seat opens; if anything changed, nothing is dropped and we hold the seat for you.`}</p>`;
+}
+
+function saveSetup() {
+  const d = s.setup, w = s.waitlists[d.id], c = COURSES[d.id];
+  update(() => {
+    if (d.mode === 'join') {
+      Object.assign(w, seedWaitlists()[d.id], { moved: null });
+    }
+    w.channels = { text: d.text, email: d.email };
+    w.auto = d.auto;
+    w.swap = d.auto && d.swap ? d.swap : null;
+    w.expires = d.expires;
+    s.setup = null;
+    if (d.mode === 'join') {
+      s.banner = { good: true, text: `You joined the ${c.code} waitlist. You're #${w.position} of ${w.size}.` };
+      sendAlert(d.id, {
+        cue: false,
+        text: `OSCAR: You're #${w.position} of ${w.size} on the ${c.code} waitlist. Auto-enroll is ${w.auto ? 'on' : 'off'}.`,
+        mail: { subject: `You're #${w.position} of ${w.size} on the ${c.code} waitlist`, lines: [`You joined the ${c.code} ${c.name} waitlist.`, `Auto-enroll is ${w.auto ? 'on' : 'off'}.`] },
+      });
+    }
+  });
+}
+
+function leaveWaitlist() {
+  const id = s.setup.id;
+  update(() => {
+    s.waitlists[id].status = 'none';
+    s.setup = null;
+    s.banner = { text: `You left the ${COURSES[id].code} waitlist.` };
+  });
+}
+
+/* ---------- Rendering ---------- */
+
+const ICONS = {
+  check: '<path d="M4 12.5l5.5 5.5L20 6.5"/>',
+  cross: '<path d="M6 6l12 12M18 6L6 18"/>',
+  warn: '<path d="M12 3.5l9.5 17h-19zM12 10v4.5M12 17.6v.1"/>',
+  bolt: '<path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/>',
+  hourglass: '<path d="M7 3h10M7 21h10M8 3c0 5 8 6 8 9s-8 4-8 9M16 3c0 5-8 6-8 9s8 4 8 9"/>',
+  undo: '<path d="M8 5L3.5 9.5 8 14M4 9.5h10a6 6 0 010 12h-4"/>',
+  msg: '<path d="M4 5h16v11H9l-5 4z"/>',
+  mail: '<path d="M3.5 6h17v12.5h-17zM3.5 7l8.5 6.5L20.5 7"/>',
+  lock: '<path d="M6 11h12v9.5H6zM8.5 11V7.5a3.5 3.5 0 017 0V11"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+};
+const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+
+// Elements animate the first time they render, never on an unrelated re-render.
+const seen = new Set();
+let cardKeys = {};
+let animate = false;
+const enter = (key) => {
+  if (seen.has(key)) return '';
+  seen.add(key);
+  return animate ? 'enter' : '';
+};
+const markSeedSeen = () => [...s.texts, ...s.emails].forEach((m) => seen.add(m.id));
+
+const $ = (id) => document.getElementById(id);
+
+function movementLabel(w) {
+  if (w.moved === null) return 'Joined today';
+  return w.moved > 0 ? `↑${w.moved} since yesterday` : 'No change since yesterday';
+}
+
+function deliveryHTML(w) {
+  const d = w.delivery;
+  if (!d) return '';
+  if (!d.ok) return `<div class="delivery fail">${icon('warn')}<span>Text not delivered — sent by email instead</span></div>`;
+  return `<div class="delivery">${icon('check')}<span>${d.channel === 'text' ? 'Text' : 'Email'} delivered ${stamp(d.at)}</span></div>`;
+}
+
+function waitingBody(id, w) {
+  const pct = (position) => `${Math.round(((w.size - position + 1) / w.size) * 100)}%`;
+  const grew = w.prevPosition && enter(`bar-${id}-${w.position}`);
+  const barStyle = grew ? `--from:${pct(w.prevPosition)};--to:${pct(w.position)};width:${pct(w.position)}` : `width:${pct(w.position)}`;
+  return `
+    <div class="pos"><strong>Position ${w.position} of ${w.size}</strong><span class="move">${movementLabel(w)}</span></div>
+    <div class="bar" role="img" aria-label="Position ${w.position} of ${w.size}"><i class="${grew ? 'grow' : ''}" style="${barStyle}"></i></div>
+    <ul class="facts">
+      <li><span class="pill ${w.auto ? 'on' : ''}">${icon('bolt')}${autoLabel(w)}</span></li>
+      <li>${w.channels.text ? icon('msg') : ''}${w.channels.email ? icon('mail') : ''}<span>Alerts: ${channelsLabel(w.channels)}</span></li>
+    </ul>`;
+}
+
+function registeredBody(id, w) {
+  const dropCode = w.reg.drop && COURSES[w.reg.drop].code;
+  const open = undoOpen(id);
+  return `
+    <p class="card-status">Registered ${icon('check')}</p>
+    <p class="fine">${day(w.reg.at)}, ${time(w.reg.at)}${dropCode ? ` · ${dropCode} dropped` : ''}</p>
+    ${open
+      ? `<button class="btn" data-act="undoDesk" data-id="${id}" data-fid="undo-${id}">${icon('undo')} Undo (${remaining(w.reg.undoBy)} left)</button>`
+      : '<p class="fine">Undo window closed. This registration is final.</p>'}`;
+}
+
+function heldBody(id, w) {
+  const dropCode = w.swap && COURSES[w.swap].code;
+  return `
+    <p class="pill solid">${icon('warn')}Seat held — needs your OK</p>
+    <p><strong>Why:</strong> ${w.reason}. Nothing has been dropped.</p>
+    <div class="count"><strong>${remaining(w.deadline)} left</strong>Expires ${longDeadline(w.deadline)}</div>
+    <div class="row">
+      <button class="btn primary" data-act="accept" data-id="${id}" data-fid="confirm-${id}">Confirm</button>
+      <button class="btn" data-act="decline" data-id="${id}" data-fid="release-${id}">Release</button>
+    </div>
+    <p class="fine">Confirm registers you in ${COURSES[id].code}${dropCode ? ` and drops ${dropCode}` : ''}. Release keeps your schedule as it is.</p>`;
+}
+
+function claimBody(id, w) {
+  return `
+    <p class="pill solid">${icon('warn')}Seat open</p>
+    <p>A seat is held for you.</p>
+    <div class="count"><strong>${remaining(w.deadline)} left to claim</strong>Expires ${longDeadline(w.deadline)}</div>
+    <button class="btn primary wide" data-act="accept" data-id="${id}" data-fid="claim-${id}">Claim</button>
+    <button class="link" data-act="decline" data-id="${id}" data-fid="pass-${id}">Pass — release this seat</button>`;
+}
+
+function undoneBody(id, w) {
+  const dropCode = w.undone.drop && COURSES[w.undone.drop].code;
+  return `
+    <p class="card-status">${icon('undo')} ${dropCode ? 'Swap undone' : 'Registration undone'}</p>
+    <p class="fine">${day(w.undone.at)}, ${time(w.undone.at)}</p>
+    <p>${COURSES[id].code} dropped.${dropCode ? ` ${dropCode} restored.` : ''}</p>`;
+}
+
+function releasedBody(id, w) {
+  return `
+    <p class="card-status">${icon('cross')} Seat released</p>
+    <p>${w.note} Your schedule didn't change.</p>`;
+}
+
+const BODIES = { waiting: waitingBody, registered: registeredBody, held: heldBody, claim: claimBody, undone: undoneBody, released: releasedBody };
+
+function cardHTML(id) {
+  const c = COURSES[id], w = s.waitlists[id];
+  const flip = animate && cardKeys[id] && cardKeys[id] !== w.status ? 'flip' : '';
+  cardKeys[id] = w.status;
+  const tag = w.status === 'waiting' ? `<span class="pill">${icon('hourglass')}Waitlisted</span>` : '';
+  const edit = w.status === 'waiting' ? `<button class="btn small" data-act="edit" data-id="${id}" data-fid="edit-${id}">Edit</button>` : '';
+  return `
+    <article class="card ${w.status} ${flip}" data-card="${id}">
+      <div class="card-head">
+        <h3><span>${c.code}</span>${c.name}</h3>
+        ${edit}
+      </div>
+      ${tag}
+      ${BODIES[w.status](id, w)}
+      ${deliveryHTML(w)}
+    </article>`;
+}
+
+function renderDesk() {
+  $('clock').textContent = `${day(s.now)}, ${time(s.now)}`;
+
+  const b = s.banner;
+  $('banner').innerHTML = b ? `
+    <div class="banner ${b.good ? 'good' : ''}">${icon('check')}<p>${b.text}</p>
+      <button class="link" data-act="dismissBanner" data-fid="banner-x">Dismiss</button></div>` : '';
+  $('banner').hidden = !b;
+
+  const ids = Object.keys(s.waitlists).filter((id) => s.waitlists[id].status !== 'none');
+  $('cards').innerHTML = ids.length ? ids.map(cardHTML).join('') : '<p>You have no waitlists right now.</p>';
+
+  $('credits').textContent = `${creditsOn()} of ${CREDIT_LIMIT} credit hours`;
+  const ordered = SCHEDULE_ORDER.filter((id) => s.schedule.includes(id));
+  $('registered').innerHTML = ordered.map((id) => {
+    const c = COURSES[id], w = s.waitlists[id];
+    const added = w && w.reg ? `<small>Added from waitlist ${time(w.reg.at)}</small>` : '';
+    return `<div class="reg-row ${enter(`reg-${id}-${w && w.reg ? w.reg.at : 0}`)}">
+      <span><b>${c.code}</b> ${c.name}${added}</span>
+      <span class="reg-tag">${icon('check')}Registered</span></div>`;
+  }).concat(s.dropped.map((d) => `<div class="reg-row dropped ${enter(`drop-${d.id}-${d.at}`)}">
+      <span><b>${COURSES[d.id].code}</b> ${COURSES[d.id].name}<small>Dropped ${time(d.at)}. Undo restores it.</small></span>
+      <span class="reg-tag">${icon('cross')}Dropped</span></div>`)).join('');
+}
+
+function resultAction(id) {
+  const w = s.waitlists[id], c = COURSES[id];
+  if (s.schedule.includes(id)) return { note: `${c.credits} cr · Registered`, html: `<span class="reg-tag">${icon('check')}Registered</span>` };
+  if (!w) return { note: `${c.credits} cr · Dropped`, html: '' };
+  if (w.status === 'waiting') return { note: `${c.credits} cr · You're #${w.position} of ${w.size}`, html: `<button class="btn small" data-act="edit" data-id="${id}" data-fid="result-${id}">Edit</button>` };
+  if (w.status === 'held' || w.status === 'claim') return { note: `${c.credits} cr · A seat is held for you`, html: '' };
+  return { note: `${c.credits} cr · Full`, html: `<button class="btn small primary" data-act="join" data-id="${id}" data-fid="result-${id}">Join waitlist</button>` };
+}
+
+function renderResults() {
+  const q = $('search').value.toLowerCase().replace(/\s/g, '');
+  const hits = q ? Object.keys(COURSES).filter((id) => `${COURSES[id].code}${COURSES[id].name}`.toLowerCase().replace(/\s/g, '').includes(q)) : [];
+  $('results').innerHTML = hits.map((id) => {
+    const c = COURSES[id], r = resultAction(id);
+    return `<div class="result"><span><b>${c.code}</b> ${c.name}<small>${r.note}</small></span>${r.html}</div>`;
+  }).join('') || (q ? '<p class="fine" style="padding-top:6px">No courses match.</p>' : '');
+}
+
+const STATUS_SVG = `<span class="status-icons" aria-hidden="true">
+  <svg viewBox="0 0 22 12"><rect x="0" y="8" width="3.4" height="4" rx="1"/><rect x="5" y="5" width="3.4" height="7" rx="1"/><rect x="10" y="2.5" width="3.4" height="9.5" rx="1"/><rect x="15" y="0" width="3.4" height="12" rx="1"/></svg>
+  <svg viewBox="0 0 26 12"><rect x=".6" y=".6" width="21.8" height="10.8" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="2.4" y="2.4" width="15" height="7.2" rx="1.5"/><rect x="23.4" y="4" width="2" height="4" rx="1"/></svg>
+</span>`;
+
+function textHTML(m) {
+  if (!m.undo) return m.text;
+  const link = undoOpen(m.undo)
+    ? `<button class="tlink" data-act="undoPhone" data-id="${m.undo}" data-fid="link-${m.id}">${UNDO_URL}</button>`
+    : `<span class="tlink dead">${UNDO_URL}</span>`;
+  return m.text.replace('{link}', link);
+}
+
+function notifHTML(n, extraClass = '') {
+  const when = s.now - n.at <= MIN ? 'now' : time(n.at);
+  const body = n.body.replace('{link}', `<u>${UNDO_URL}</u>`);
+  return `<button class="notif ${enter(n.id)} ${extraClass}" data-act="notif" data-view="${n.target.view}" data-mail="${n.target.mailId || ''}">
+    <span class="notif-head"><span>${icon(n.app === 'Mail' ? 'mail' : 'msg')}${n.app} · ${n.title}</span><span>${when}</span></span>
+    ${body}</button>`;
+}
+
+function lockView() {
+  const d = new Date(s.now);
+  return `<div class="lock">
+    <div class="lock-time">${clock12(d)}</div>
+    <div class="lock-date">${dayLong(s.now)}</div>
+    <div class="notifs">${s.notifs.map((n) => notifHTML(n)).join('')}</div>
+  </div>`;
+}
+
+function messagesView() {
+  const id = replyCourse();
+  let lastDay = null;
+  const bubbles = s.texts.map((m) => {
+    const label = day(m.at) === lastDay ? '' : `<p class="day">${day(m.at)}</p>`;
+    lastDay = day(m.at);
+    return `${label}<div class="bubble ${m.from === 'me' ? 'me' : ''} ${enter(m.id)}">${textHTML(m)}<time>${time(m.at)}</time></div>`;
+  }).join('');
+  const chips = id ? `
+    <p class="reply-hint">Reply about ${COURSES[id].code}</p>
+    <div class="chips">
+      <button class="chip go" data-act="reply" data-word="CLAIM" data-fid="chip-claim">CLAIM</button>
+      <button class="chip" data-act="reply" data-word="PASS" data-fid="chip-pass">PASS</button>
+    </div>` : '';
+  return `
+    <div class="app-head"><span class="avatar">O</span><div><b>OSCAR</b><small>Text message</small></div></div>
+    <div class="thread" id="thread">${bubbles}</div>
+    <div class="reply">${chips}<div class="composer">Text message</div></div>`;
+}
+
+function mailActionsHTML(mail) {
+  const id = mail.course;
+  if (!mail.action) return '';
+  if (mail.action === 'undo') {
+    return undoOpen(id)
+      ? `<button class="btn primary wide" data-act="undoPhone" data-id="${id}" data-fid="mail-undo">Undo (${remaining(s.waitlists[id].reg.undoBy)} left)</button>`
+      : '<p class="fine">Undo is no longer available for this registration.</p>';
+  }
+  const w = s.waitlists[id];
+  if (w.status !== 'held' && w.status !== 'claim') return '<p class="fine">You already answered this one.</p>';
+  return `<div class="count"><strong>${remaining(w.deadline)} left</strong></div>
+    <button class="btn primary wide" data-act="accept" data-id="${id}" data-fid="mail-accept">${w.status === 'held' ? 'Confirm' : 'Claim my seat'}</button>
+    <button class="btn wide" data-act="decline" data-id="${id}" data-fid="mail-decline">${w.status === 'held' ? 'Release' : 'Pass'}</button>`;
+}
+
+function mailView() {
+  const mail = s.emails.find((e) => e.id === s.phone.mailId);
+  if (mail) {
+    return `
+      <div class="app-head"><button class="back" data-act="mailBack" data-fid="mail-back">${icon('back')}Inbox</button></div>
+      <article class="mail-read">
+        <h3>${mail.subject}</h3>
+        <p class="mail-from">From: OSCAR Registration &lt;registration@oscar.example&gt;<br>To: josh@student.example<br>${day(mail.at)}, ${time(mail.at)}</p>
+        ${mail.lines.map((l) => `<p>${l}</p>`).join('')}
+        ${mailActionsHTML(mail)}
+      </article>`;
+  }
+  return `
+    <div class="app-head"><div><b>Inbox</b><small>josh@student.example</small></div></div>
+    <div class="mail-list">${s.emails.map((e) => `
+      <button class="mail-row ${e.read ? '' : 'unread'} ${enter(e.id)}" data-act="mailOpen" data-mail="${e.id}" data-fid="mail-${e.id}">
+        <small><span>OSCAR Registration</span><span>${stamp(e.at)}</span></small>
+        <b>${e.subject}</b>
+      </button>`).join('')}</div>`;
+}
+
+function undoHTML(id) {
+  const c = COURSES[id], w = s.waitlists[id], drop = w.reg.drop;
+  return `
+    <h2 id="undo-title">${drop ? 'Undo this swap?' : 'Undo this registration?'}</h2>
+    <ul class="undo-list">
+      <li>${icon('cross')}<span>Drop ${c.code}</span></li>
+      ${drop ? `<li>${icon('undo')}<span>Restore ${COURSES[drop].code} (seat held for you)</span></li>` : ''}
+    </ul>
+    <p class="fine">Your ${c.code} seat goes to the next student on the waitlist. ${remaining(w.reg.undoBy)} left to undo.</p>
+    <div class="undo-actions">
+      <button class="btn primary" data-act="undoConfirm" data-id="${id}" data-autofocus data-fid="undo-go">${drop ? 'Undo swap' : 'Undo registration'}</button>
+      <button class="btn" data-act="undoKeep" data-fid="undo-keep">Keep ${c.code}</button>
+    </div>`;
+}
+
+function renderPhone() {
+  const p = s.phone;
+  const unreadMail = s.emails.filter((e) => !e.read).length;
+  const badge = (n) => n ? `<span class="tab-badge">${n}</span>` : '';
+  const tab = (view, label, ic, n) => `<button class="tab" data-act="tab" data-view="${view}" data-fid="tab-${view}" ${p.view === view ? 'aria-current="page"' : ''}>
+    ${icon(ic)}${label}${badge(n)}</button>`;
+  const view = p.view === 'lock' ? lockView() : p.view === 'messages' ? messagesView() : mailView();
+  const sheet = s.undo && s.undo.where === 'phone'
+    ? `<div class="sheet"><div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="undo-title">${undoHTML(s.undo.id)}</div></div>` : '';
+  $('screen').className = `screen ${p.view === 'lock' ? 'is-lock' : ''}`;
+  $('screen').innerHTML = `
+    <div class="status"><span>${clock12(new Date(s.now))}</span>${STATUS_SVG}</div>
+    ${p.banner ? notifHTML(p.banner, 'banner-notif') : ''}
+    <div class="view">${view}</div>
+    <nav class="tabs" aria-label="Phone apps">
+      ${tab('lock', 'Lock', 'lock', 0)}
+      ${tab('messages', 'Messages', 'msg', s.unreadTexts)}
+      ${tab('mail', 'Mail', 'mail', unreadMail)}
+    </nav>
+    ${sheet}`;
+  const thread = $('thread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
+function renderDemo() {
+  const el = $('demo');
+  el.hidden = !s.demoOpen;
+  if (!s.demoOpen) return;
+  const key = (k, label, attrs = '') => `<button data-act="demoKey" data-key="${k}" data-fid="demo-${k}" ${attrs}><kbd>${k}</kbd>${label}</button>`;
+  el.innerHTML = `
+    <div class="demo-head"><strong>Demo controls</strong><span>Next text: ${s.failNextText ? 'will FAIL, email fallback' : 'will deliver'} · D hides this</span></div>
+    <div class="demo-grid">
+      ${key(1, 'Move CS 6750 up one position')}
+      ${key(2, 'Open a seat in CS 6750')}
+      ${key(3, 'Add a conflict, open a CS 6750 seat')}
+      ${key(4, 'Open a seat in CS 7641')}
+      ${key(5, 'Make the next text fail', `aria-pressed="${s.failNextText}"`)}
+      <div class="demo-row">${key(6, '+1 h')}${key(7, '+6 h')}${key(8, '+23 h')}</div>
+      <button data-act="reset" data-fid="demo-r"><kbd>R</kbd>Reset to seed data</button>
+    </div>`;
+}
+
+// Dialogs on the left pane render once when they open, so typing in them is never disturbed.
+let modalKey = '';
+let modalOpener = null;
+function renderModal() {
+  const undo = s.undo && s.undo.where === 'desk' ? s.undo : null;
+  const key = s.setup ? `setup-${s.setup.id}` : undo ? `undo-${undo.id}` : '';
+  if (key === modalKey) return;
+  const opener = modalOpener;
+  modalKey = key;
+  modalOpener = s.setup ? s.setup.opener : undo ? undo.opener : null;
+  const modal = $('modal');
+  if (s.setup) {
+    modal.innerHTML = setupHTML(s.setup);
+    renderPreflight();
+  } else if (undo) {
+    modal.innerHTML = `<div class="scrim"><div class="dialog narrow" role="dialog" aria-modal="true" aria-labelledby="undo-title">${undoHTML(undo.id)}</div></div>`;
+  } else {
+    modal.innerHTML = '';
+    if (opener) (document.querySelector(`[data-fid="${opener}"]`) || document.body).focus();
+    return;
+  }
+  const first = modal.querySelector('[data-autofocus]');
+  if (first) first.focus();
+}
+
+function render() {
+  const active = document.activeElement;
+  const fid = active && active.dataset ? active.dataset.fid : null;
+  renderDesk();
+  renderResults();
+  renderPhone();
+  renderDemo();
+  if (fid) {
+    const again = document.querySelector(`[data-fid="${fid}"]`);
+    if (again) again.focus();
+  }
+  renderModal();
+}
+
+/* ---------- Events ---------- */
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (el) clicks[el.dataset.act](el);
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'search') return renderResults();
+  const d = s.setup;
+  if (!d) return;
+  const t = e.target;
+  if (t.id === 'f-text') d.text = t.checked;
+  if (t.id === 'f-email') d.email = t.checked;
+  if (t.id === 'f-auto') d.auto = t.checked;
+  if (t.id === 'f-swap') d.swap = t.value;
+  if (t.id === 'f-expires') d.expires = t.value;
+  renderPreflight();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (s.setup) closeSetup();
+    else if (s.undo) update(() => { s.undo = null; });
+    return;
+  }
+  if (e.key === 'Tab') {
+    const box = document.querySelector('[role="dialog"]');
+    if (!box) return;
+    const items = [...box.querySelectorAll('button, input, select')].filter((x) => !x.disabled && x.offsetParent);
+    const first = items[0], last = items[items.length - 1];
+    if (!box.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.matches('input:not([type="checkbox"]), select, textarea')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'd' || k === 'r' || keymap[k]) document.activeElement.blur(); // no stray focus ring on camera
+  if (k === 'd') update(() => { s.demoOpen = !s.demoOpen; });
+  else if (k === 'r') resetAll();
+  else if (keymap[k]) update(keymap[k]);
+});
+
+markSeedSeen();
+render();
+animate = true;
+</script>
+</body>
+</html>
