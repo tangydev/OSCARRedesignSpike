@@ -4,6 +4,8 @@ A clickable prototype for the demo video. All data is fake, and reloading the pa
 
 Open `index.html` in a browser. It needs no install, server or network. It's laid out for a 1440×900 window.
 
+It's also hosted on GitHub Pages at https://tangydev.github.io/OSCARRedesignSpike/ (deployed from the root of `main`).
+
 ## Demo shortcuts
 
 Shortcuts work while the demo panel is hidden.
